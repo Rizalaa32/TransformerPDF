@@ -1,0 +1,8 @@
+{
+  "name": "transformpdf",
+  "version": "1.0.0",
+  "description": "Full-Stack PDF Swiss Army Knife",
+  "scripts": {
+    "start": "python -m uvicorn main:app --port 8000 --reload"
+  }
+}

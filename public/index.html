@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TransformPDF - Swiss Army Knife for Documents</title>
+    <!-- Tailwind CSS (via CDN for client-side simplicity) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Dependencies (We will add these dynamically or load them here later) -->
+    <!-- pdf-lib -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+    <!-- pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <!-- Configure Tailwind (Optional for custom brand colors) -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6', // Tailwind blue-500
+                        secondary: '#10b981' // Tailwind emerald-500
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased flex flex-col min-h-screen">
+    
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-indigo-600">TransformPDF</h1>
+            </div>
+            <nav class="hidden md:flex space-x-1 bg-slate-100 p-1 rounded-lg">
+                <!-- Navigation Tabs -->
+                <button class="nav-btn active px-4 py-2 rounded-md text-sm font-medium transition-all" data-target="module-word2pdf">Word to PDF</button>
+                <button class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-target="module-merge">Merge PDF</button>
+                <button class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-all" data-target="module-organize">Organize Pages</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex flex-col items-center justify-start">
+        
+        <!-- Module 1: Word to PDF (Active by default for now) -->
+        <section id="module-word2pdf" class="module-section w-full max-w-4xl">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2 flex justify-center items-center gap-3">
+                    Word to PDF Converter
+                    <span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-medium border border-amber-200">Local Backend</span>
+                </h2>
+                <p class="text-slate-500">Ubah dokumen Word (.docx) Anda menjadi PDF dengan akurasi 100% menggunakan engine lokal.</p>
+            </div>
+
+            <!-- Upload Area -->
+            <div id="w2p-upload-area" class="upload-area border-2 border-dashed border-slate-300 rounded-xl p-12 text-center bg-white hover:bg-slate-50 hover:border-primary transition-all cursor-pointer mb-6 max-w-3xl mx-auto">
+                <input type="file" id="w2p-file-input" accept=".docx" class="hidden">
+                <div class="mx-auto w-16 h-16 mb-4 bg-primary/10 rounded-full flex items-center justify-center text-primary pointer-events-none">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                </div>
+                <h3 class="text-lg font-medium text-slate-900 mb-1 pointer-events-none">Pilih File Word (.docx)</h3>
+                <p class="text-sm text-slate-500 pointer-events-none">Klik atau Drag & Drop dokumen Word di sini</p>
+            </div>
+
+            <p id="w2p-status" class="text-center mb-6 text-sm text-slate-600 hidden"></p>
+
+            <!-- Preview Workspace -->
+            <div id="w2p-workspace" class="hidden flex flex-col items-center">
+                
+                <div class="w-full bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <svg class="w-6 h-6 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
+                        <span id="w2p-filename" class="font-medium text-slate-700 truncate max-w-xs md:max-w-md">document.docx</span>
+                        <button id="w2p-change-file-btn" class="text-xs text-primary hover:text-blue-700 ml-2 font-medium bg-blue-50 px-2 py-1 rounded">Ganti File</button>
+                    </div>
+                    
+                    <button id="w2p-action-btn" class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-600 transition-colors shadow-sm flex items-center justify-center gap-2">
+                        <span>Konversi & Unduh PDF</span>
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Module 2: PDF Merger (Hidden initially) -->
+        <section id="module-merge" class="module-section w-full max-w-3xl hidden">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">PDF Merger</h2>
+                <p class="text-slate-500">Gabungkan beberapa file PDF menjadi satu dokumen utuh.</p>
+            </div>
+            
+            <!-- Upload Area -->
+            <div id="merge-upload-area" class="upload-area border-2 border-dashed border-slate-300 rounded-xl p-8 text-center bg-white hover:bg-slate-50 hover:border-primary transition-all cursor-pointer mb-6">
+                <input type="file" id="merge-file-input" multiple accept="application/pdf" class="hidden">
+                <div class="mx-auto w-16 h-16 mb-4 bg-primary/10 rounded-full flex items-center justify-center text-primary pointer-events-none">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                </div>
+                <h3 class="text-lg font-medium text-slate-900 mb-1 pointer-events-none">Tambah File PDF</h3>
+                <p class="text-sm text-slate-500 pointer-events-none">Pilih atau Drag & Drop beberapa file PDF di sini</p>
+            </div>
+
+            <!-- File List -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6 hidden" id="merge-list-container">
+                <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
+                    <h4 class="font-medium text-slate-700">Daftar File <span class="text-xs font-normal text-slate-500">(Drag untuk mengurutkan)</span></h4>
+                    <button id="merge-clear-btn" class="text-sm text-red-500 hover:text-red-700 font-medium">Bersihkan</button>
+                </div>
+                <ul id="merge-file-list" class="divide-y divide-slate-100 max-h-64 overflow-y-auto">
+                    <!-- List items will be injected here by JS -->
+                </ul>
+            </div>
+
+            <!-- Action Button -->
+            <div class="text-center">
+                <button id="merge-action-btn" class="bg-primary text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto flex items-center justify-center gap-2 mx-auto" disabled>
+                    <span>Gabungkan PDF</span>
+                </button>
+                <p id="merge-status" class="mt-3 text-sm text-slate-600 hidden"></p>
+            </div>
+        </section>
+
+        <!-- Module 3: PDF Organize (Hidden initially) -->
+        <section id="module-organize" class="module-section w-full max-w-5xl hidden">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">PDF Page Manager</h2>
+                <p class="text-slate-500">Hapus atau ubah urutan halaman PDF Anda.</p>
+            </div>
+            
+            <!-- Upload Area (Shown when no file is selected) -->
+            <div id="org-upload-area" class="upload-area border-2 border-dashed border-slate-300 rounded-xl p-8 text-center bg-white hover:bg-slate-50 hover:border-primary transition-all cursor-pointer mb-6 max-w-3xl mx-auto">
+                <input type="file" id="org-file-input" accept="application/pdf" class="hidden">
+                <div class="mx-auto w-16 h-16 mb-4 bg-primary/10 rounded-full flex items-center justify-center text-primary pointer-events-none">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                </div>
+                <h3 class="text-lg font-medium text-slate-900 mb-1 pointer-events-none">Pilih 1 File PDF</h3>
+                <p class="text-sm text-slate-500 pointer-events-none">Pilih atau Drag & Drop PDF untuk mengatur halamannya</p>
+            </div>
+
+            <!-- Workspace Area (Hidden initially) -->
+            <div id="org-workspace" class="hidden">
+                <!-- Toolbar -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <svg class="w-6 h-6 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
+                        <span id="org-filename" class="font-medium text-slate-700 truncate max-w-xs md:max-w-md">filename.pdf</span>
+                        <button id="org-change-file-btn" class="text-xs text-primary hover:text-blue-700 ml-2 font-medium bg-blue-50 px-2 py-1 rounded">Ganti File</button>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <button id="org-add-pdf-btn" class="bg-slate-100 text-slate-700 px-4 py-2 rounded-lg font-medium hover:bg-slate-200 transition-colors shadow-sm border border-slate-300 flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            <span class="hidden sm:inline">Tambah PDF</span>
+                        </button>
+                        <input type="file" id="org-add-file-input" accept="application/pdf" class="hidden" multiple>
+
+                        <button id="org-action-btn" class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-600 transition-colors shadow-sm flex items-center justify-center gap-2">
+                            <span>Simpan PDF Baru</span>
+                        </button>
+                    </div>
+                </div>
+
+                <p id="org-status" class="text-center mb-6 text-sm text-slate-600 hidden"></p>
+
+                <!-- Thumbnails Grid -->
+                <div class="bg-slate-100 rounded-xl border border-slate-200 p-6 min-h-[400px]">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-medium text-slate-700">Halaman <span id="org-page-count" class="text-sm font-normal text-slate-500"></span></h4>
+                        <span class="text-xs text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">Drag & Drop untuk mengatur urutan</span>
+                    </div>
+                    
+                    <div id="org-thumbnails-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                        <!-- Thumbnails will be generated here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 py-6 text-center text-sm text-slate-500">
+            <p>Aplikasi berjalan di Server Lokal Anda. Data aman 100%.</p>
+        </div>
+    </footer>
+
+    <!-- Main Scripts -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
